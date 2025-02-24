@@ -1,5 +1,6 @@
-import { useAtomValue } from "jotai";
-import { imagesOutputAtom } from "../../atoms";
+import { useAtomValue, useSetAtom } from "jotai";
+import { imagesOutputAtom, previewAtom } from "../../atoms";
+import { Lightbox } from "../Lightbox/Lightbox";
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes";
@@ -37,6 +38,15 @@ const getDimensionOffset = (
 
 export const Output = () => {
   const imagesOutput = useAtomValue(imagesOutputAtom);
+  const setPreview = useSetAtom(previewAtom);
+
+  const handlePreview = (index: number) => {
+    setPreview({
+      isOpen: true,
+      currentIndex: index,
+      selectedVariant: "converted",
+    });
+  };
 
   return (
     <div className="output border rounded-2xl dark:border-gray-800 w-full p-4">
@@ -46,13 +56,19 @@ export const Output = () => {
             key={index}
             className="flex flex-col border dark:border-gray-700 rounded-lg overflow-hidden"
           >
-            <div className="relative h-[200px]">
+            <button
+              onClick={() => handlePreview(index)}
+              className="relative h-[200px] overflow-hidden group"
+            >
               <img
                 src={image.convertedFile.url}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform group-hover:scale-110"
                 alt={image.originalFile.name}
               />
-            </div>
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <span className="text-white">Preview</span>
+              </div>
+            </button>
 
             <div className="p-3 space-y-2 text-sm">
               <div className="flex items-center justify-between">
@@ -112,6 +128,7 @@ export const Output = () => {
           </div>
         ))}
       </div>
+      <Lightbox />
     </div>
   );
 };
