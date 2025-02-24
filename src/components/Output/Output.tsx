@@ -17,6 +17,24 @@ const formatDate = (date: Date): string => {
   });
 };
 
+const getCompressedPercent = (originalSize: number, convertedSize: number) => {
+  const floatingValue = ((originalSize - convertedSize) / originalSize) * 100;
+  return floatingValue.toFixed(2);
+};
+
+const getDimensionOffset = (
+  originalWidth: number,
+  originalHeight: number,
+  convertedWidth: number,
+  convertedHeight: number
+) => {
+  // only 2 digits
+  return {
+    width: Number((originalWidth - convertedWidth).toFixed(2)),
+    height: Number((originalHeight - convertedHeight).toFixed(2)),
+  };
+};
+
 export const Output = () => {
   const imagesOutput = useAtomValue(imagesOutputAtom);
 
@@ -39,51 +57,39 @@ export const Output = () => {
             <div className="p-3 space-y-2 text-sm">
               <div className="flex items-center justify-between">
                 <div
-                  className="font-medium truncate"
+                  className="font-medium truncate max-w-[200px]"
                   title={image.originalFile.name}
                 >
                   {image.originalFile.name}
                 </div>
-                <div className="text-gray-500">
+                <div className="text-gray-500 min-w-max">
                   {formatDate(image.originalFile.createdAt)}
                 </div>
               </div>
 
-              <div className="space-y-1 text-gray-600 dark:text-gray-400">
-                <div className="flex justify-between">
-                  <span>Original:</span>
-                  <span>{image.originalFile.extension.toUpperCase()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Size:</span>
-                  <span>{formatBytes(image.originalFile.size)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Dimensions:</span>
-                  <span>
-                    {image.originalFile.width}×{image.originalFile.height}
-                  </span>
-                </div>
-              </div>
+              <FileInfo
+                size={image.originalFile.size}
+                dimension={`${image.originalFile.width}×${image.originalFile.height}`}
+                extension={image.originalFile.extension.toUpperCase()}
+              />
 
               <div className="border-t dark:border-gray-700 my-2" />
-
-              <div className="space-y-1 text-gray-600 dark:text-gray-400">
-                <div className="flex justify-between">
-                  <span>Converted:</span>
-                  <span>{image.convertedFile.extension.toUpperCase()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Size:</span>
-                  <span>{formatBytes(image.convertedFile.size)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Dimensions:</span>
-                  <span>
-                    {image.convertedFile.width}×{image.convertedFile.height}
-                  </span>
-                </div>
-              </div>
+              <FileInfo
+                size={image.convertedFile.size}
+                getDimensionOffset={getDimensionOffset(
+                  image.originalFile.width,
+                  image.originalFile.height,
+                  image.convertedFile.width,
+                  image.convertedFile.height
+                )}
+                dimension={`${image.convertedFile.width}×${image.convertedFile.height}`}
+                extension={image.convertedFile.extension.toUpperCase()}
+                isCompressed
+                compressedPercent={getCompressedPercent(
+                  image.originalFile.size,
+                  image.convertedFile.size
+                )}
+              />
 
               {(image.thumbnail || image.icon) && (
                 <>
@@ -109,3 +115,72 @@ export const Output = () => {
     </div>
   );
 };
+
+const getReducedColor = (compressedPercent: string) => {
+  const colorScale = [
+    "dark:text-red-600",
+    "dark:text-orange-600",
+    "dark:text-yellow-600",
+    "dark:text-green-600",
+    "dark:text-violet-600",
+  ];
+  const index = Math.round(Number(compressedPercent) / 20);
+  return colorScale[index - 1] ? colorScale[index - 1] : colorScale[0];
+};
+
+function FileInfo({
+  size,
+  dimension,
+  extension,
+  isCompressed,
+  compressedPercent,
+  getDimensionOffset,
+}: {
+  size: number;
+  dimension: string;
+  extension: string;
+  isCompressed?: boolean;
+  compressedPercent?: string;
+  getDimensionOffset?: {
+    width: number;
+    height: number;
+  };
+}) {
+  return (
+    <div className="flex justify-between">
+      <div className="space-y-1 text-gray-600 dark:text-gray-400 text-right">
+        <div className="text-xs text-left">
+          {isCompressed ? "" : "original size"}
+          {compressedPercent && (
+            <>
+              <span className={getReducedColor(compressedPercent)}>
+                {compressedPercent}%
+              </span>
+              {isCompressed ? " reduction" : ""}
+            </>
+          )}
+        </div>
+        <div className="text text-left">{extension}</div>
+      </div>
+
+      <div className="space-y-1 text-gray-600 dark:text-gray-400 text-right">
+        <div className="text-xs">
+          {!getDimensionOffset ? (
+            dimension
+          ) : !getDimensionOffset.width && !getDimensionOffset.height ? (
+            <span className="text-gray-400 dark:text-gray-600">
+              Original size
+            </span>
+          ) : (
+            `${getDimensionOffset.width}×${getDimensionOffset.height} px`
+          )}
+        </div>
+        {size && <div>{formatBytes(size)}</div>}
+      </div>
+    </div>
+  );
+}
+
+{
+  /* <span className="text-gray-400 dark:text-green-600"> */
+}
